@@ -332,6 +332,16 @@ func TestSeparateV4V6(t *testing.T) {
 	}
 }
 
+func TestCleanIptables(t *testing.T) {
+	cfg := constructTestConfig()
+	cfg.EnableInboundIPv6 = true
+	iptConfigurator := NewIptablesConfigurator(cfg, &dep.StdoutStubDependencies{})
+	// Running iptConfigurator.Run() twice (simulating istio-init container restart after failure)
+	// should not cause failure as iptables are cleaned everytime before applying istio iptables rules.
+	iptConfigurator.Run()
+	iptConfigurator.Run()
+}
+
 func compareToGolden(t *testing.T, name string, actual []string) {
 	t.Helper()
 	gotBytes := []byte(strings.Join(actual, "\n"))

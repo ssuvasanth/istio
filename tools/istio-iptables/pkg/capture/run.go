@@ -585,6 +585,9 @@ func (cfg *IptablesConfigurator) Run() {
 		cfg.iptables.InsertRule(iptableslog.UndefinedCommand, constants.ISTIOINBOUND, constants.MANGLE, 3,
 			"-p", constants.TCP, "-i", "lo", "-m", "mark", "!", "--mark", outboundMark, "-j", constants.RETURN)
 	}
+	// https://github.com/istio/istio/issues/40169 - Cleaning Iptables to start from a consistent state in case istio-init container was
+	// restarted after a failure/error during previous run.
+	cfg.cleanIptables()
 	cfg.executeCommands()
 }
 
@@ -847,5 +850,12 @@ func (cfg *IptablesConfigurator) executeCommands() {
 		// Execute ip6tables commands
 		cfg.executeIptablesCommands(cfg.iptables.BuildV6())
 
+	}
+}
+
+func (cfg *IptablesConfigurator) cleanIptables() {
+	err := cfg.ext.Run(os.Args[0], constants.CommandCleanIptables)
+	if err != nil {
+		log.Errorf("Error while running istio-clean-iptables: %s", err.Error())
 	}
 }

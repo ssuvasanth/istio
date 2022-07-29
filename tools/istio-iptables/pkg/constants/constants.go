@@ -172,4 +172,5 @@ const (
 
 const (
 	CommandConfigureRoutes = "configure-routes"
+	CommandCleanIptables = "istio-clean-iptables"
 )
