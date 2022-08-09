@@ -17,12 +17,14 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"syscall"
 
 	"github.com/vishvananda/netlink"
 	"golang.org/x/sys/unix"
 
 	"istio.io/istio/tools/istio-iptables/pkg/config"
 	"istio.io/istio/tools/istio-iptables/pkg/constants"
+	"istio.io/pkg/log"
 )
 
 // configureTProxyRoutes configures ip firewall rules to enable TPROXY support.
@@ -83,4 +85,19 @@ func configureTProxyRoutes(cfg *config.Config) error {
 		}
 	}
 	return nil
+}
+
+// Gets linux kernel version
+func getKVersion() []byte {
+	var uts syscall.Utsname
+	var release []byte
+	err := syscall.Uname(&uts)
+	if err != nil {
+		log.Errorf("Unable to get Linux Kernel version: %s", err.Error())
+		return nil
+	}
+	for _, v := range uts.Release {
+		release = append(release, byte(v))
+	}
+	return release
 }

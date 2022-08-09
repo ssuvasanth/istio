@@ -171,4 +171,5 @@ const (
 
 const (
 	CommandConfigureRoutes = "configure-routes"
+	IP                     = "ip"
 )
