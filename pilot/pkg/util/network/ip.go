@@ -20,6 +20,8 @@ import (
 	"net"
 	"time"
 
+	"istio.io/api/annotation"
+	"istio.io/istio/pkg/bootstrap"
 	"istio.io/istio/pkg/sleep"
 	"istio.io/pkg/log"
 )
@@ -65,7 +67,16 @@ func getPrivateIPsIfAvailable() ([]string, bool) {
 
 	ifaces, _ := net.Interfaces()
 
+	excludedInterface := ""
+	annotations, err := bootstrap.ReadPodAnnotations("")
+	if v, f := annotations[annotation.SidecarTrafficExcludeInterfaces.Name]; f {
+		excludedInterface = v
+	}
+
 	for _, iface := range ifaces {
+		if iface.Name == excludedInterface {
+			continue
+		}
 		if iface.Flags&net.FlagUp == 0 {
 			continue // interface down
 		}

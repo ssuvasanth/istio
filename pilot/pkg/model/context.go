@@ -906,6 +906,10 @@ func (node *Proxy) SupportsIPv6() bool {
 
 // IsIPv6 returns true if proxy only supports IPv6 addresses.
 func (node *Proxy) IsIPv6() bool {
+	// Dual or IPv6 means IPv6 address is available
+	// if node.ipMode == IPv6 || node.ipMode == Dual {
+	// 	return true
+	// }
 	return node.ipMode == IPv6
 }
 
