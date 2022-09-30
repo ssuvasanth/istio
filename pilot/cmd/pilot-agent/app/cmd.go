@@ -18,18 +18,21 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 
+	"istio.io/api/annotation"
 	meshconfig "istio.io/api/mesh/v1alpha1"
 	"istio.io/istio/pilot/cmd/pilot-agent/config"
 	"istio.io/istio/pilot/cmd/pilot-agent/options"
 	"istio.io/istio/pilot/cmd/pilot-agent/status"
 	"istio.io/istio/pilot/pkg/model"
 	"istio.io/istio/pilot/pkg/util/network"
+	"istio.io/istio/pkg/bootstrap"
 	"istio.io/istio/pkg/cmd"
 	"istio.io/istio/pkg/config/constants"
 	"istio.io/istio/pkg/envoy"
@@ -272,18 +275,34 @@ func initProxy(args []string) (*model.Proxy, error) {
 		proxy.IPAddresses = []string{podIP.String()}
 	}
 
+	excludedInterface := ""
+	annotations, err := bootstrap.ReadPodAnnotations("")
+	if err != nil {
+		if os.IsNotExist(err) {
+			log.Debugf("failed to read pod annotations: %v", err)
+		} else {
+			log.Warnf("failed to read pod annotations: %v", err)
+		}
+	}
+	if v, f := annotations[annotation.SidecarTrafficExcludeInterfaces.Name]; f {
+		excludedInterface = v
+	}
 	// Obtain all the IPs from the node
 	if ipAddrs, ok := network.GetPrivateIPs(context.Background()); ok {
 		if len(proxy.IPAddresses) == 1 {
 			for _, ip := range ipAddrs {
 				// prevent duplicate ips, the first one must be the pod ip
 				// as we pick the first ip as pod ip in istiod
-				if proxy.IPAddresses[0] != ip {
+				if proxy.IPAddresses[0] != ip && ip != excludedInterface {
 					proxy.IPAddresses = append(proxy.IPAddresses, ip)
 				}
 			}
 		} else {
-			proxy.IPAddresses = append(proxy.IPAddresses, ipAddrs...)
+			for _, ip := range ipAddrs {
+				if ip != excludedInterface {
+					proxy.IPAddresses = append(proxy.IPAddresses, ipAddrs...)
+				}
+			}
 		}
 	}
 
